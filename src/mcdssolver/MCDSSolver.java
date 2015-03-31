@@ -373,8 +373,8 @@ public class MCDSSolver {
         f = D_minus.size();// * LAMBDA + num_edges_D_star;
         HashSet<VNode> bak_D_star = new HashSet<>();
 
-        int base_strength = D_star.size() / 3;
-        int max_strength = D_star.size();
+        final int base_strength = D_star.size() / 3;
+        final int max_strength = D_star.size()-1;
 
         int perturb_strength = base_strength;
 
@@ -397,12 +397,13 @@ public class MCDSSolver {
             } else if (f == best_f) {
                 if (D_star.equals(bak_D_star)) {
                     perturb_strength = Math.min(perturb_strength + 1, max_strength);
+                    //System.out.println("Strength boost  " + perturb_strength);
                 } else {
                     perturb_strength = base_strength;
                     bak_D_star.clear();
                     bak_D_star.addAll(D_star);
+                    //System.out.println("Strength shrank   "+ perturb_strength);
                 }
-
             } else {
                 count_fail_improve++;
             }
