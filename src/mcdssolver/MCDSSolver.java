@@ -34,21 +34,21 @@ public class MCDSSolver {
     HashSet<VNode> D_minus;
 
     int iter_count = 0;
-    int count_fail_improve=0;
+    int count_fail_improve = 0;
     int best_f;
     int f;
-    
+
     int tabu_length = 50;
     int base_tabu_length = 100;
-    
+
     long start_time;
 
     final UndirectedGraph<VNode, DefaultEdge> graph = new SimpleGraph<VNode, DefaultEdge>(
             DefaultEdge.class);
 
-    final Random rGen = new Random(0);
+    final Random rGen = new Random();
     final int LAMBDA = 1000;
-    
+
     private VNode make_node(int nIndex) {
         for (VNode v : graph.vertexSet()) {
             if (v.index == nIndex) {
@@ -216,11 +216,15 @@ public class MCDSSolver {
                         minus_v_tabu = a;
                         add_v_tabu = b;
                         count_tabu = 1;
-                    } else if (delta == min_delta_tabu
-                            && rGen.nextInt(++count_tabu) == 0) {
-                        min_delta_tabu = delta;
-                        minus_v_tabu = a;
-                        add_v_tabu = b;
+                    } else if (delta == min_delta_tabu) {
+                        if (/*minus_v_tabu.degree_to_D_star - add_v_tabu.degree_to_D_star < a.degree_to_D_star - b.degree_to_D_star
+                                ||*/ rGen.nextInt(count_tabu + 1) == 0) {
+                            min_delta_tabu = delta;
+                            minus_v_tabu = a;
+                            add_v_tabu = b;
+                            
+                        }
+                        count_tabu++;
                     }
                 } else {//if b is not tabu
                     if (delta < min_delta) {
@@ -228,11 +232,14 @@ public class MCDSSolver {
                         minus_v = a;
                         add_v = b;
                         count = 1;
-                    } else if (delta == min_delta
-                            && rGen.nextInt(++count) == 0) {
-                        min_delta = delta;
-                        minus_v = a;
-                        add_v = b;
+                    } else if (delta == min_delta) {
+                        if (/*minus_v.degree_to_D_star - add_v.degree_to_D_star < a.degree_to_D_star - b.degree_to_D_star
+                                ||*/ rGen.nextInt(count + 1) == 0) {
+                            minus_v = a;
+                            add_v = b;
+                            count++;
+                        }
+                        count++;
                     }
                 }
             }
@@ -275,22 +282,21 @@ public class MCDSSolver {
                 delta_v--;
             }
         }
-        int delta_edge_num = - minus_v.degree_to_D_star + add_v.degree_to_D_star;
-        if(graph.containsEdge(minus_v, add_v)){
-            delta_edge_num--;
-        }
+//        int delta_edge_num = -minus_v.degree_to_D_star + add_v.degree_to_D_star;
+//        if (graph.containsEdge(minus_v, add_v)) {
+//            delta_edge_num--;
+//        }
         return delta_v;// * LAMBDA + delta_edge_num;
     }
 
     private void move_in_D_star(VNode v) {
-        if(D_star.isEmpty()){
+        if (D_star.isEmpty()) {
             D_minus.remove(v);
-        }else{
+        } else {
             D_plus.remove(v);
         }
-        
-        D_star.add(v);
 
+        D_star.add(v);
 
         for (DefaultEdge e : graph.edgesOf(v)) {
             VNode u = graph.getEdgeSource(e);
@@ -333,24 +339,32 @@ public class MCDSSolver {
         while (!D_minus.isEmpty()) {
             Move mv = find_move();
             make_move(mv);
-            
-            if(D_minus.size() != f){
+            //check_solution();
+            if (D_minus.size() != f) {
                 System.out.println("err");
             }
-            
-            if(f < best_f){
+
+            if (f < best_f) {
                 best_f = f;
                 count_fail_improve = 0;
-            }else{
+            } else {
                 count_fail_improve++;
             }
-            
+
             //base_tabu_length = Math.min(50 + count_fail_improve, 200);
             iter_count++;
-            
-            if(iter_count%1000 == 0){
-                System.out.println("iter: " +iter_count + "  objective: " + D_minus.size() + " best:"+best_f);
+
+            if (iter_count % 1000 == 0) {
+                System.out.println("iter: " + iter_count + "  objective: " + D_minus.size() + " best:" + best_f);
             }
+            
+            if(count_fail_improve > 5000){
+                count_fail_improve = 0;
+                System.out.println("Perturbating...");
+                perturbation();
+                f = D_minus.size();
+            }
+            
         }
         write_result();
         check_solution();
@@ -361,68 +375,109 @@ public class MCDSSolver {
         String file_name = "result/res" + String.valueOf(D_star.size()) + ".txt";
         File file = new File(file_name);
         PrintWriter out = new PrintWriter(file);
-        out.println("running time : " + (System.currentTimeMillis()-start_time) + "ms");
+        out.println("running time : " + (System.currentTimeMillis() - start_time) + "ms");
         out.println(D_star);
-        
+
         out.close();
     }
-    
-    private void dfs(VNode r){
+
+    private void dfs(VNode r) {
         r.visited = true;
-        for(DefaultEdge e : graph.edgesOf(r)){
+        for (DefaultEdge e : graph.edgesOf(r)) {
             VNode v = graph.getEdgeSource(e);
-            if(v==r){
+            if (v == r) {
                 v = graph.getEdgeTarget(e);
             }
-            if(!v.visited && D_star.contains(v)){
+            if (!v.visited && D_star.contains(v)) {
                 dfs(v);
             }
         }
     }
-    
-    private void check_solution(){
+
+    private void check_solution() {
         //check domination
-        for(VNode v : graph.vertexSet()){
+        for (VNode v : graph.vertexSet()) {
             boolean is_dominated = false;
-            if(!D_star.contains(v)){
-                for(VNode d_v : D_star){
-                    if(graph.containsEdge(v, d_v)){
+            if (!D_star.contains(v)) {
+                for (VNode d_v : D_star) {
+                    if (graph.containsEdge(v, d_v)) {
                         is_dominated = true;
                         break;
                     }
                 }
-                if(is_dominated == false){
+                if (is_dominated == false) {
                     throw new UnsupportedOperationException("Vertex is not dominated:" + v);
                 }
             }
         }
-        
+
         //check connectivity
-        for(VNode v : D_star){
+        for (VNode v : D_star) {
             v.visited = false;
         }
         VNode r = D_star.iterator().next();
         dfs(r);
-        for(VNode v : D_star){
-            if(!v.visited ){
+        for (VNode v : D_star) {
+            if (!v.visited) {
                 throw new UnsupportedOperationException("D* is not connected!");
             }
         }
     }
     
-    private void for_1_CDS() throws FileNotFoundException{
+    private void perturbation(){
+        int K = D_star.size();
+        D_star.clear();
+        D_plus.clear();
+        D_minus.clear();
+        D_minus.addAll(graph.vertexSet());
+        
         for(VNode v : graph.vertexSet()){
+            v.degree_to_D_star = 0;
+            v.tabu_tenur = 0;
+        }
+        
+        ArrayList<VNode> copy = new ArrayList<>();
+        //Collections.shuffle(copy, rGen);
+        VNode rv = graph.vertexSet().iterator().next();
+        move_in_D_star(rv);
+        
+        while(D_star.size() < K){
+            copy.clear();
+            copy.addAll(D_star);
+            Collections.shuffle(copy, rGen);
+            outer:
+            for(VNode sv: copy){
+                for(DefaultEdge e : graph.edgesOf(sv)){
+                    VNode uv = graph.getEdgeSource(e);
+                    if(uv == sv){
+                        uv = graph.getEdgeTarget(e);
+                    }
+                    if(!D_star.contains(uv)){
+                        move_in_D_star(uv);
+                        break outer;
+                    }
+                }
+            }
+        }
+        determine_articulation_points();
+        D_point_star = new ArrayList<>(
+                D_star.stream().filter((v) -> (v.is_articulation == false))
+                .collect(Collectors.toList()));
+    }
+    
+    private void for_1_CDS() throws FileNotFoundException {
+        for (VNode v : graph.vertexSet()) {
             boolean all_dominated = true;
-            for(VNode v_t : graph.vertexSet()){
-                if(v == v_t){
+            for (VNode v_t : graph.vertexSet()) {
+                if (v == v_t) {
                     continue;
                 }
-                if(!graph.containsEdge(v, v_t)){
+                if (!graph.containsEdge(v, v_t)) {
                     all_dominated = false;
                     break;
                 }
             }
-            if(all_dominated){
+            if (all_dominated) {
                 D_star.clear();
                 D_star.add(v);
                 write_result();
@@ -430,19 +485,19 @@ public class MCDSSolver {
             }
         }
     }
-    
+
     public void solve(int lower_bound) throws FileNotFoundException {
         initialization();
         start_time = System.currentTimeMillis();
         while (D_star.size() > lower_bound) {
             reduce();
-            System.out.println("Solving "+D_star.size() +"-CDS...");
-            if(D_star.size() == 1){
+            System.out.println("Solving " + D_star.size() + "-CDS...");
+            if (D_star.size() == 1) {
                 for_1_CDS();
-            }else{
+            } else {
                 local_search();
             }
-            
+
         }
     }
 

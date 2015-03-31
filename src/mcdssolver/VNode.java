@@ -12,7 +12,7 @@ package mcdssolver;
 public class VNode {
 
     final int index;
-    int degree_to_D_star;
+    int degree_to_D_star=0;
     boolean is_articulation = false;
     public boolean visited = false;
     public int dep;
