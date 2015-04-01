@@ -371,7 +371,7 @@ public class MCDSSolver {
     private void local_search() throws FileNotFoundException {
         prepare_LS();
         f = D_minus.size();// * LAMBDA + num_edges_D_star;
-        HashSet<VNode> bak_D_star = new HashSet<>();
+        HashSet<VNode> bak_D_star = new HashSet<>(D_star);
 
         final int base_strength = D_star.size() / 3;
         final int max_strength = D_star.size() - 1;
@@ -382,14 +382,14 @@ public class MCDSSolver {
         while (!D_minus.isEmpty()) {
             Move mv = find_move();
 
-            make_move(mv);
+            
 
             //check_solution();
             if (D_minus.size() != f) {
                 System.out.println("err");
             }
 
-            if (f < best_f) {
+            if (mv.delta>0 && f < best_f) {
                 best_f = f;
                 count_fail_improve = 0;
                 bak_D_star.clear();
@@ -410,11 +410,13 @@ public class MCDSSolver {
             } else {
                 count_fail_improve++;
             }
-
+            
+            make_move(mv);
+            
             //base_tabu_length = Math.min(50 + count_fail_improve, 200);
             iter_count++;
 
-            if (iter_count % 500 == 0) {
+            if (iter_count % 1000 == 0) {
                 System.out.println("iter: " + iter_count + "  objective: " + D_minus.size() + " best:" + best_f);
             }
 
