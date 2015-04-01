@@ -39,7 +39,7 @@ public class MCDSSolver {
     int f;
 
     int tabu_length = 50;
-    int base_tabu_length = 100;
+    int base_tabu_length = 10;
 
     long start_time;
 
@@ -374,9 +374,10 @@ public class MCDSSolver {
         HashSet<VNode> bak_D_star = new HashSet<>();
 
         final int base_strength = D_star.size() / 3;
-        final int max_strength = D_star.size()-1;
+        final int max_strength = D_star.size() - 1;
 
         int perturb_strength = base_strength;
+        int perturb_count = 0;
 
         while (!D_minus.isEmpty()) {
             Move mv = find_move();
@@ -394,6 +395,7 @@ public class MCDSSolver {
                 bak_D_star.clear();
                 bak_D_star.addAll(D_star);
                 perturb_strength = base_strength;
+                perturb_count = 0;
             } else if (f == best_f) {
                 if (D_star.equals(bak_D_star)) {
                     perturb_strength = Math.min(perturb_strength + 1, max_strength);
@@ -404,6 +406,7 @@ public class MCDSSolver {
                     bak_D_star.addAll(D_star);
                     //System.out.println("Strength shrank   "+ perturb_strength);
                 }
+                //count_fail_improve++;
             } else {
                 count_fail_improve++;
             }
@@ -411,15 +414,20 @@ public class MCDSSolver {
             //base_tabu_length = Math.min(50 + count_fail_improve, 200);
             iter_count++;
 
-            if (iter_count % 1000 == 0) {
+            if (iter_count % 500 == 0) {
                 System.out.println("iter: " + iter_count + "  objective: " + D_minus.size() + " best:" + best_f);
             }
 
-            if (count_fail_improve > 1000) {
+            if (count_fail_improve > 300) {
                 count_fail_improve = 0;
-                System.out.println("Perturbating...Strength:" + perturb_strength);
-                roll_back(bak_D_star);
+                perturb_count++;
 
+//                if (perturb_count > 10) {
+//                    perturb_strength = D_star.size() * 2 / 3;
+//                    perturb_count = 0;
+//                }
+                //System.out.println("Perturbating...Strength:" + perturb_strength);
+                roll_back(bak_D_star);
                 perturbation(perturb_strength);
                 f = D_minus.size();
             }
