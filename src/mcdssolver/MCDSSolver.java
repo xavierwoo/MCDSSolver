@@ -14,6 +14,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -62,7 +63,6 @@ public class MCDSSolver {
 
     public MCDSSolver(String instance) throws FileNotFoundException, IOException {
         BufferedReader in;
-
         in = new BufferedReader(new FileReader(instance));
         String line = in.readLine();
         String r[] = line.split(" ");
@@ -177,7 +177,6 @@ public class MCDSSolver {
                 .collect(Collectors.toList()));
         Collections.shuffle(D_point_star, rGen);
         VNode node_to_del = D_point_star.get(D_point_star.size() - 1);
-        //D_point_star.remove(node_to_del);
         move_out_D_star(node_to_del);
         determine_articulation_points();
         D_point_star = new ArrayList<>(
@@ -222,8 +221,7 @@ public class MCDSSolver {
                         add_v_tabu = b;
                         count_tabu = 1;
                     } else if (delta == min_delta_tabu) {
-                        if (/*minus_v_tabu.degree_to_D_star - add_v_tabu.degree_to_D_star < a.degree_to_D_star - b.degree_to_D_star
-                                 ||*/rGen.nextInt(count_tabu + 1) == 0) {
+                        if (rGen.nextInt(count_tabu + 1) == 0) {
                             min_delta_tabu = delta;
                             minus_v_tabu = a;
                             add_v_tabu = b;
@@ -238,8 +236,7 @@ public class MCDSSolver {
                         add_v = b;
                         count = 1;
                     } else if (delta == min_delta) {
-                        if (/*minus_v.degree_to_D_star - add_v.degree_to_D_star < a.degree_to_D_star - b.degree_to_D_star
-                                 ||*/rGen.nextInt(count + 1) == 0) {
+                        if (rGen.nextInt(count + 1) == 0) {
                             minus_v = a;
                             add_v = b;
                             count++;
@@ -287,20 +284,16 @@ public class MCDSSolver {
                 delta_v--;
             }
         }
-//        int delta_edge_num = -minus_v.degree_to_D_star + add_v.degree_to_D_star;
-//        if (graph.containsEdge(minus_v, add_v)) {
-//            delta_edge_num--;
-//        }
-        return delta_v;// * LAMBDA + delta_edge_num;
+        return delta_v;
     }
 
     private void move_in_D_star(VNode v) {
-        if (D_star.isEmpty()) {
+        if(D_minus.contains(v)){
             D_minus.remove(v);
-        } else {
+        }
+        if(D_plus.contains(v)){
             D_plus.remove(v);
         }
-
         D_star.add(v);
 
         for (DefaultEdge e : graph.edgesOf(v)) {
@@ -309,7 +302,7 @@ public class MCDSSolver {
                 u = graph.getEdgeTarget(e);
             }
             u.degree_to_D_star++;
-            if (u.degree_to_D_star == 1) {
+            if (u.degree_to_D_star == 1 && !D_star.contains(u)) {
                 D_minus.remove(u);
                 D_plus.add(u);
             }
@@ -323,10 +316,6 @@ public class MCDSSolver {
                 + base_tabu_length;
         move_out_D_star(mv.minus_v);
         move_in_D_star(mv.add_v);
-//        determine_articulation_points();
-//        D_point_star = new ArrayList<>(
-//                D_star.stream().filter((v) -> (v.is_articulation == false))
-//                .collect(Collectors.toList()));
         f += mv.delta;
     }
 
@@ -368,9 +357,12 @@ public class MCDSSolver {
                 .collect(Collectors.toList()));
     }
 
+
+
     private void local_search() throws FileNotFoundException {
         prepare_LS();
         f = D_minus.size();// * LAMBDA + num_edges_D_star;
+        best_f = f;
         HashSet<VNode> bak_D_star = new HashSet<>(D_star);
 
         final int base_strength = D_star.size() / 3;
@@ -382,14 +374,12 @@ public class MCDSSolver {
         while (!D_minus.isEmpty()) {
             Move mv = find_move();
 
-            
-
             //check_solution();
             if (D_minus.size() != f) {
                 System.out.println("err");
             }
 
-            if (mv.delta>0 && f < best_f) {
+            if (mv.delta > 0 && f < best_f) {
                 best_f = f;
                 count_fail_improve = 0;
                 bak_D_star.clear();
@@ -410,10 +400,20 @@ public class MCDSSolver {
             } else {
                 count_fail_improve++;
             }
-            
+
+
+
             make_move(mv);
-            
-            //base_tabu_length = Math.min(50 + count_fail_improve, 200);
+
+            if (D_star.size() + D_plus.size() + D_minus.size() != graph.vertexSet().size()) {
+                System.out.println("w");
+            }
+
+            //check_D_minus();
+            if (D_minus.size() != f) {
+                System.out.println("err");
+            }
+
             iter_count++;
 
             if (iter_count % 1000 == 0) {
@@ -423,15 +423,10 @@ public class MCDSSolver {
             if (count_fail_improve > 300) {
                 count_fail_improve = 0;
                 perturb_count++;
-
-//                if (perturb_count > 10) {
-//                    perturb_strength = D_star.size() * 2 / 3;
-//                    perturb_count = 0;
-//                }
-                //System.out.println("Perturbating...Strength:" + perturb_strength);
                 roll_back(bak_D_star);
                 perturbation(perturb_strength);
                 f = D_minus.size();
+
             }
 
         }
@@ -463,6 +458,19 @@ public class MCDSSolver {
         }
     }
 
+    private void check_connectivity() {
+        for (VNode v : D_star) {
+            v.visited = false;
+        }
+        VNode r = D_star.iterator().next();
+        dfs(r);
+        for (VNode v : D_star) {
+            if (!v.visited) {
+                throw new UnsupportedOperationException("D* is not connected!");
+            }
+        }
+    }
+
     private void check_solution() {
         //check domination
         for (VNode v : graph.vertexSet()) {
@@ -481,58 +489,47 @@ public class MCDSSolver {
         }
 
         //check connectivity
-        for (VNode v : D_star) {
-            v.visited = false;
-        }
-        VNode r = D_star.iterator().next();
-        dfs(r);
-        for (VNode v : D_star) {
-            if (!v.visited) {
-                throw new UnsupportedOperationException("D* is not connected!");
-            }
-        }
+        check_connectivity();
     }
-
-    private void perturbation(int p_length) {
-        int K = D_star.size();
-
-        for (int i = 0; i < p_length; i++) {
-            Collections.shuffle(D_point_star);
-            VNode rv = D_point_star.get(0);
-            move_out_D_star(rv);
+    
+    private VNode get_random_in_set(HashSet<VNode> vSet){
+        int rI = rGen.nextInt(vSet.size());
+        
+        Iterator<VNode> iter =vSet.iterator();
+        VNode rv=null;
+        for(int i=0; i<=rI; i++){
+            rv = iter.next();
+        }
+        return rv;
+    }
+    
+    private Move random_mv(){
+        VNode a, b;
+        do{
             determine_articulation_points();
             D_point_star = new ArrayList<>(
                     D_star.stream().filter((v) -> (v.is_articulation == false))
                     .collect(Collectors.toList()));
-            if (D_point_star.isEmpty()) {
-                break;
-            }
-        }
-
-        ArrayList<VNode> copy = new ArrayList<>();
-        while (D_star.size() < K) {
-            copy.clear();
-            copy.addAll(D_star);
-            Collections.shuffle(copy, rGen);
-            outer:
-            for (VNode sv : copy) {
-                for (DefaultEdge e : graph.edgesOf(sv)) {
-                    VNode uv = graph.getEdgeSource(e);
-                    if (uv == sv) {
-                        uv = graph.getEdgeTarget(e);
-                    }
-                    if (!D_star.contains(uv)) {
-                        move_in_D_star(uv);
-                        break outer;
-                    }
-                }
-            }
-        }
-        determine_articulation_points();
-        D_point_star = new ArrayList<>(
-                D_star.stream().filter((v) -> (v.is_articulation == false))
-                .collect(Collectors.toList()));
+            Collections.shuffle(D_point_star, rGen);
+            a = D_point_star.get(0);
+            b = get_random_in_set(D_plus);
+            
+        }while(!is_validate(a,b));
+        
+        return new Move(a,b,calc_delta(a,b));
     }
+    
+    private void perturbation(int p_length){
+        for(int i=0; i<p_length; i++){
+            
+            Move mv = random_mv();
+            make_move(mv);
+            if (D_star.size() + D_plus.size() + D_minus.size() != graph.vertexSet().size()) {
+                System.out.println("w");
+            }
+        }
+    }
+    
 
     private void for_1_CDS() throws FileNotFoundException {
         for (VNode v : graph.vertexSet()) {
@@ -575,8 +572,8 @@ public class MCDSSolver {
      */
     public static void main(String[] args) throws IOException {
         // TODO code application logic here
-        MCDSSolver solver = new MCDSSolver(args[0]);
-        solver.solve(1);
+        MCDSSolver solver = new MCDSSolver("instances/v200_d5.dat");
+        solver.solve(26);
     }
 
 }
