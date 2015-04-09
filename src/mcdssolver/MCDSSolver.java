@@ -572,8 +572,8 @@ public class MCDSSolver {
      */
     public static void main(String[] args) throws IOException {
         // TODO code application logic here
-        MCDSSolver solver = new MCDSSolver("instances/v200_d5.dat");
-        solver.solve(26);
+        MCDSSolver solver = new MCDSSolver("instances/MCDSP/n3000_400_r240.txt");
+        solver.solve(1);
     }
 
 }
