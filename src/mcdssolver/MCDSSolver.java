@@ -74,7 +74,9 @@ public class MCDSSolver {
             VNode source = make_node(Integer.parseInt(r[0]));
             VNode sink = make_node(Integer.parseInt(r[1]));
 
-            graph.addEdge(source, sink);
+            if(graph.addEdge(source, sink)==null){
+                System.out.println("The instance have duplicate edges");
+            }
         }
 
         //System.out.println(graph);
@@ -572,8 +574,8 @@ public class MCDSSolver {
      */
     public static void main(String[] args) throws IOException {
         // TODO code application logic here
-        MCDSSolver solver = new MCDSSolver("instances/MCDSP/n3000_400_r240.txt");
-        solver.solve(1);
+        MCDSSolver solver = new MCDSSolver("instances/IEEE/ieee_300_bus.txt");
+        solver.solve(129);
     }
 
 }
