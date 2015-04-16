@@ -74,7 +74,7 @@ public class MCDSSolver {
             VNode source = make_node(Integer.parseInt(r[0]));
             VNode sink = make_node(Integer.parseInt(r[1]));
 
-            if(graph.addEdge(source, sink)==null){
+            if (graph.addEdge(source, sink) == null) {
                 System.out.println("The instance have duplicate edges");
             }
         }
@@ -241,7 +241,6 @@ public class MCDSSolver {
                         if (rGen.nextInt(count + 1) == 0) {
                             minus_v = a;
                             add_v = b;
-                            count++;
                         }
                         count++;
                     }
@@ -290,10 +289,10 @@ public class MCDSSolver {
     }
 
     private void move_in_D_star(VNode v) {
-        if(D_minus.contains(v)){
+        if (D_minus.contains(v)) {
             D_minus.remove(v);
         }
-        if(D_plus.contains(v)){
+        if (D_plus.contains(v)) {
             D_plus.remove(v);
         }
         D_star.add(v);
@@ -359,8 +358,6 @@ public class MCDSSolver {
                 .collect(Collectors.toList()));
     }
 
-
-
     private void local_search() throws FileNotFoundException {
         prepare_LS();
         f = D_minus.size();// * LAMBDA + num_edges_D_star;
@@ -371,15 +368,10 @@ public class MCDSSolver {
         final int max_strength = D_star.size() - 1;
 
         int perturb_strength = base_strength;
-        int perturb_count = 0;
 
         while (!D_minus.isEmpty()) {
             Move mv = find_move();
 
-            //check_solution();
-            if (D_minus.size() != f) {
-                System.out.println("err");
-            }
 
             if (mv.delta > 0 && f < best_f) {
                 best_f = f;
@@ -387,7 +379,6 @@ public class MCDSSolver {
                 bak_D_star.clear();
                 bak_D_star.addAll(D_star);
                 perturb_strength = base_strength;
-                perturb_count = 0;
             } else if (f == best_f) {
                 if (D_star.equals(bak_D_star)) {
                     perturb_strength = Math.min(perturb_strength + 1, max_strength);
@@ -403,17 +394,10 @@ public class MCDSSolver {
                 count_fail_improve++;
             }
 
-
-
             make_move(mv);
 
             if (D_star.size() + D_plus.size() + D_minus.size() != graph.vertexSet().size()) {
                 System.out.println("w");
-            }
-
-            //check_D_minus();
-            if (D_minus.size() != f) {
-                System.out.println("err");
             }
 
             iter_count++;
@@ -422,9 +406,8 @@ public class MCDSSolver {
                 System.out.println("iter: " + iter_count + "  objective: " + D_minus.size() + " best:" + best_f);
             }
 
-            if (count_fail_improve > 300) {
+            if (count_fail_improve > 100) {
                 count_fail_improve = 0;
-                perturb_count++;
                 roll_back(bak_D_star);
                 perturbation(perturb_strength);
                 f = D_minus.size();
@@ -493,21 +476,21 @@ public class MCDSSolver {
         //check connectivity
         check_connectivity();
     }
-    
-    private VNode get_random_in_set(HashSet<VNode> vSet){
+
+    private VNode get_random_in_set(HashSet<VNode> vSet) {
         int rI = rGen.nextInt(vSet.size());
-        
-        Iterator<VNode> iter =vSet.iterator();
-        VNode rv=null;
-        for(int i=0; i<=rI; i++){
+
+        Iterator<VNode> iter = vSet.iterator();
+        VNode rv = null;
+        for (int i = 0; i <= rI; i++) {
             rv = iter.next();
         }
         return rv;
     }
-    
-    private Move random_mv(){
+
+    private Move random_mv() {
         VNode a, b;
-        do{
+        do {
             determine_articulation_points();
             D_point_star = new ArrayList<>(
                     D_star.stream().filter((v) -> (v.is_articulation == false))
@@ -515,23 +498,19 @@ public class MCDSSolver {
             Collections.shuffle(D_point_star, rGen);
             a = D_point_star.get(0);
             b = get_random_in_set(D_plus);
-            
-        }while(!is_validate(a,b));
-        
-        return new Move(a,b,calc_delta(a,b));
+
+        } while (!is_validate(a, b));
+
+        return new Move(a, b, calc_delta(a, b));
     }
-    
-    private void perturbation(int p_length){
-        for(int i=0; i<p_length; i++){
-            
+
+    private void perturbation(int p_length) {
+        for (int i = 0; i < p_length; i++) {
+
             Move mv = random_mv();
             make_move(mv);
-            if (D_star.size() + D_plus.size() + D_minus.size() != graph.vertexSet().size()) {
-                System.out.println("w");
-            }
         }
     }
-    
 
     private void for_1_CDS() throws FileNotFoundException {
         for (VNode v : graph.vertexSet()) {
