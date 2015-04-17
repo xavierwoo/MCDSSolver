@@ -23,7 +23,6 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
 /**
- *
  * @author xavierwoo
  */
 public class MCDSSolver {
@@ -44,11 +43,10 @@ public class MCDSSolver {
 
     long start_time;
 
-    final UndirectedGraph<VNode, DefaultEdge> graph = new SimpleGraph<VNode, DefaultEdge>(
+    final UndirectedGraph<VNode, DefaultEdge> graph = new SimpleGraph<>(
             DefaultEdge.class);
 
     final Random rGen = new Random();
-    final int LAMBDA = 1000;
 
     private VNode make_node(int nIndex) {
         for (VNode v : graph.vertexSet()) {
@@ -61,7 +59,7 @@ public class MCDSSolver {
         return v;
     }
 
-    public MCDSSolver(String instance) throws FileNotFoundException, IOException {
+    public MCDSSolver(String instance) throws IOException {
         BufferedReader in;
         in = new BufferedReader(new FileReader(instance));
         String line = in.readLine();
@@ -175,24 +173,19 @@ public class MCDSSolver {
     private void reduce() {
         determine_articulation_points();
         D_point_star = new ArrayList<>(
-                D_star.stream().filter((v) -> (v.is_articulation == false))
-                .collect(Collectors.toList()));
+                D_star.stream().filter((v) -> (!v.is_articulation))
+                        .collect(Collectors.toList()));
         Collections.shuffle(D_point_star, rGen);
         VNode node_to_del = D_point_star.get(D_point_star.size() - 1);
         move_out_D_star(node_to_del);
         determine_articulation_points();
         D_point_star = new ArrayList<>(
-                D_star.stream().filter((v) -> (v.is_articulation == false))
-                .collect(Collectors.toList()));
+                D_star.stream().filter((v) -> (!v.is_articulation))
+                        .collect(Collectors.toList()));
     }
 
     private boolean is_validate(VNode minus_node, VNode add_node) {
-        if (D_star.size() == 1) {
-            return true;
-        } else {
-            return !(graph.containsEdge(minus_node, add_node)
-                    && add_node.degree_to_D_star == 1);
-        }
+        return D_star.isEmpty() || !(graph.containsEdge(minus_node, add_node) && add_node.degree_to_D_star == 1);
     }
 
     private Move find_move() {
@@ -207,8 +200,8 @@ public class MCDSSolver {
 
         determine_articulation_points();
         D_point_star = new ArrayList<>(
-                D_star.stream().filter((v) -> (v.is_articulation == false))
-                .collect(Collectors.toList()));
+                D_star.stream().filter((v) -> (!v.is_articulation))
+                        .collect(Collectors.toList()));
 
         for (VNode a : D_point_star) {
             for (VNode b : D_plus) {
@@ -249,8 +242,7 @@ public class MCDSSolver {
         }
 
         Move move = null;
-        if (minus_v_tabu != null && add_v_tabu != null
-                && minus_v != null && add_v != null) {
+        if (minus_v_tabu != null && minus_v != null) {
             if (min_delta_tabu < min_delta && min_delta_tabu + D_minus.size() < best_f) {
                 move = new Move(minus_v_tabu, add_v_tabu, min_delta_tabu);
             } else {
@@ -354,8 +346,8 @@ public class MCDSSolver {
         }
         determine_articulation_points();
         D_point_star = new ArrayList<>(
-                D_star.stream().filter((v) -> (v.is_articulation == false))
-                .collect(Collectors.toList()));
+                D_star.stream().filter((v) -> (!v.is_articulation))
+                        .collect(Collectors.toList()));
     }
 
     private void local_search() throws FileNotFoundException {
@@ -467,7 +459,7 @@ public class MCDSSolver {
                         break;
                     }
                 }
-                if (is_dominated == false) {
+                if (!is_dominated) {
                     throw new UnsupportedOperationException("Vertex is not dominated:" + v);
                 }
             }
@@ -493,8 +485,8 @@ public class MCDSSolver {
         do {
             determine_articulation_points();
             D_point_star = new ArrayList<>(
-                    D_star.stream().filter((v) -> (v.is_articulation == false))
-                    .collect(Collectors.toList()));
+                    D_star.stream().filter((v) -> (!v.is_articulation))
+                            .collect(Collectors.toList()));
             Collections.shuffle(D_point_star, rGen);
             a = D_point_star.get(0);
             b = get_random_in_set(D_plus);
