@@ -544,7 +544,7 @@ public class MCDSSolver {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException {
-        
+
         MCDSSolver solver = new MCDSSolver("instances/MLSTP/v30_d10.dat");
         solver.solve(15);
     }
