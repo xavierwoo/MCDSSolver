@@ -538,6 +538,7 @@ public class MCDSSolver {
             }
 
         }
+        System.out.println("using " + (System.currentTimeMillis() - start_time) + " ms.");
     }
 
     /**
@@ -545,8 +546,8 @@ public class MCDSSolver {
      */
     public static void main(String[] args) throws IOException {
 
-        MCDSSolver solver = new MCDSSolver("instances/MLSTP/v30_d10.dat");
-        solver.solve(15);
+        MCDSSolver solver = new MCDSSolver("instances/MLSTP/v120_d20.dat");
+        solver.solve(8);
     }
 
 }
