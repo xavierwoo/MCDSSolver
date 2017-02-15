@@ -1,6 +1,6 @@
 #A Minimum Connected Dominating Set Problem solver
 
-This is the source code of the BTS algorithm proposed in paper:
+This is the source code of the algorithm proposed in paper:
 
 Restricted swap-based neighborhood search for the minimum connected dominating set problem
 
