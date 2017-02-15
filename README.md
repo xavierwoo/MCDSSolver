@@ -4,6 +4,10 @@ This is the source code of the BTS algorithm proposed in paper:
 
 Restricted swap-based neighborhood search for the minimum connected dominating set problem
 
+10.1002/net.21728
+
+http://onlinelibrary.wiley.com/doi/10.1002/net.21728/abstract
+
 
 ##How to use
 The files in the folder /instances are the instances files used in the paper.
