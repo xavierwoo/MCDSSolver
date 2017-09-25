@@ -1,4 +1,4 @@
-#A Minimum Connected Dominating Set Problem solver
+# A Minimum Connected Dominating Set Problem solver
 
 This is the source code of the algorithm proposed in the paper:
 
@@ -9,7 +9,8 @@ Restricted swap-based neighbourhood search for the minimum connected dominating 
 http://onlinelibrary.wiley.com/doi/10.1002/net.21728/abstract
 
 
-##How to use
+## How to use
+
 The files in the folder /instances are the instance files used in the paper.
 Please create a folder named "result" in the root folder of the project.
 The code would not be happy if it is not there.
